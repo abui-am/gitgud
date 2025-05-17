@@ -13,3 +13,8 @@
 
 # Dependency directories
 vendor/ 
+
+
+prompt/
+.autocommit.md
+.env
