@@ -1,9 +1,7 @@
-# GitGud
-
-A simple Git wrapper CLI app written in Go.
+![Group 1 (2)](https://github.com/user-attachments/assets/a642c270-1e2a-499e-880e-a4feec914445)
 
 ## Features
-
+![download](https://github.com/user-attachments/assets/edbe19aa-129f-49c5-bd31-53bf04b73a44)
 - Executes all standard Git commands
 - Provides cleaner success messages
 - Passes all arguments to the underlying Git command
