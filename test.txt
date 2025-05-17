@@ -1,0 +1,5 @@
+This is a test file to try out our GitGud version control system.
+
+It's a simplified Git-like CLI app written in Go.
+
+This line was added after the initial commit. 
