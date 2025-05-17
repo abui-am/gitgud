@@ -1,5 +1,10 @@
 ![Group 1 (2)](https://github.com/user-attachments/assets/a642c270-1e2a-499e-880e-a4feec914445)
-
+```bash
+Generating commit message with AI...
+Generated commit message:
+feat(auto): allow customizable autocommit rules via .autocommit.md
+Do you want to commit with this message? (y/n):
+```
 ## Features
 ![download](https://github.com/user-attachments/assets/edbe19aa-129f-49c5-bd31-53bf04b73a44)
 - Executes all standard Git commands
