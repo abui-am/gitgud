@@ -156,6 +156,10 @@ func handleAutoCommit() {
 		os.Exit(1)
 	}
 
+	// Inform users they can modify the rules
+	fmt.Println("Note: You can customize the commit message format by creating or editing the .autocommit.md file.")
+	fmt.Println("      This file is not tracked by Git (it's in .gitignore).")
+
 	// Check if there are changes to commit
 	if !hasChangesToCommit() {
 		fmt.Println("No changes to commit. Working tree clean.")

@@ -9,6 +9,7 @@ A simple Git wrapper CLI app written in Go.
 - Passes all arguments to the underlying Git command
 - Fall-through behavior for any Git command not explicitly listed
 - AI-powered autocommit feature to generate commit messages following Conventional Commits format
+- Customizable commit message rules via .autocommit.md file
 
 ## Installation
 
@@ -24,6 +25,36 @@ Create a `.env` file in the same directory as the executable with your OpenAI AP
 
 ```
 OPENAI_API_KEY=your_openai_api_key_here
+```
+
+### Customizing Autocommit Rules
+
+You can modify the commit message format by creating or editing the `.autocommit.md` file. This file contains the rules that will be sent to the AI when generating commit messages.
+
+Note: The `.autocommit.md` file is listed in `.gitignore`, so you'll need to create it manually in each repository where you use this tool. This ensures your commit message customizations don't get committed to your repository.
+
+Example `.autocommit.md` content:
+
+```markdown
+# Autocommit Rules
+
+Please follow the Conventional Commits 1.0.0 specification for the commit message.
+
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+
+Common types include:
+
+- feat: A new feature
+- fix: A bug fix
+- docs: Documentation changes
+- style: Code style changes (formatting, etc.)
+- refactor: Code refactoring
+- test: Testing changes
+- chore: Maintenance tasks
 ```
 
 ## Usage
@@ -53,6 +84,8 @@ The `autocommit` command (or its shorter alias `ac`):
 2. Sends the diff to OpenAI to generate a meaningful commit message following the Conventional Commits format
 3. Shows you the suggested commit message and asks for confirmation
 4. If you confirm, stages all changes and commits them with the AI-generated message
+
+**Important**: You can customize the commit message format by creating or editing the `.autocommit.md` file. Since this file is in `.gitignore`, you'll need to create it in each repository where you use this tool.
 
 Example:
 
