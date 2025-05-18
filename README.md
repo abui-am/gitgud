@@ -10,6 +10,8 @@ A simple Git wrapper CLI app written in Go.
 - Fall-through behavior for any Git command not explicitly listed
 - AI-powered autocommit feature to generate commit messages following Conventional Commits format
 - Customizable commit message rules via .autocommit.md file
+- Flexible configuration options for OpenAI API key
+- API key validation and troubleshooting
 
 ## Installation
 
@@ -19,13 +21,94 @@ A simple Git wrapper CLI app written in Go.
 go build -o gg.exe
 ```
 
-## Setup for AI features
+### Adding to System PATH
 
-Create a `.env` file in the same directory as the executable with your OpenAI API key:
+For convenience, you can add the directory containing `gg.exe` to your system PATH to run it from any location:
+
+**On Windows:**
+
+1. Open System Properties → Advanced → Environment Variables
+2. Edit the PATH variable and add the directory containing gg.exe
+3. Open a new command prompt for the changes to take effect
+
+**On Linux/macOS:**
+
+```
+export PATH="$PATH:/path/to/directory/containing/gg"
+```
+
+## Configuration Management
+
+### Viewing and Managing Configuration
+
+The `gg config` command helps you manage your OpenAI API key and other settings:
+
+```
+gg config             # View current configuration status
+gg config reset       # Reset and update your API key
+```
+
+When viewing your configuration, the app will show all locations where it looks for your API key, whether each exists, and whether the keys are valid or invalid.
+
+### Handling Invalid API Keys
+
+If your API key is invalid or expired, you'll receive a specific error message when using features that require the OpenAI API. You can:
+
+1. Run `gg config reset` to update your API key
+2. The app will prompt you to enter a new key and choose where to save it
+3. The new key will be validated immediately to ensure it works
+
+## Setup for OpenAI API Key
+
+The application will look for your OpenAI API key in several locations, in the following order:
+
+1. System environment variable (`OPENAI_API_KEY`)
+2. `.env` file in the current working directory
+3. Config file in your home directory (`~/.gg/config.json`)
+4. `.env` file or config in the same directory as the executable
+5. If no API key is found, it will prompt you to enter one interactively
+
+### Option 1: Environment Variable
+
+Set the `OPENAI_API_KEY` environment variable:
+
+**On Windows:**
+
+```
+set OPENAI_API_KEY=your_api_key_here
+```
+
+**On Linux/macOS:**
+
+```
+export OPENAI_API_KEY=your_api_key_here
+```
+
+### Option 2: Local .env File
+
+Create a `.env` file in your project directory:
 
 ```
 OPENAI_API_KEY=your_openai_api_key_here
 ```
+
+### Option 3: User Home Configuration (Recommended)
+
+The recommended approach is to store your API key in your user home directory:
+
+```
+~/.gg/config.json
+```
+
+With content:
+
+```json
+{
+  "openai_api_key": "your_api_key_here"
+}
+```
+
+This file will be created automatically if you run the autocommit command and choose to save the API key to your home directory when prompted.
 
 ### Customizing Autocommit Rules
 
@@ -117,4 +200,4 @@ Common types include:
 - `test`: Adding or fixing tests
 - `chore`: Changes to the build process or auxiliary tools
 
-You can customize the commit message format by editing the `.autocommit.md` file.
+You can customize the commit message format by creating or editing the `.autocommit.md` file.
