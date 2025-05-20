@@ -27,6 +27,12 @@ type Config struct {
 	OpenAIAPIKey string `json:"openai_api_key"`
 }
 
+type AutocommitRules struct {
+	Rules  string
+	Source string
+	Path   string
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: gg <command> [<args>]")
@@ -557,6 +563,17 @@ func handleAutoCommit() {
 		branchName = "unknown"
 	}
 
+	// Get autocommit rules
+	rules, err := getAutocommitRules()
+	if err != nil {
+		fmt.Printf("Warning: Could not load autocommit rules: %v\n", err)
+		rules = AutocommitRules{
+			Rules:  "Please follow the Conventional Commits format: <type>(<scope>): <description>",
+			Source: "root",
+			Path:   "built-in",
+		}
+	}
+
 	// Check if user has a custom .autocommit.md file
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -570,8 +587,14 @@ func handleAutoCommit() {
 		}
 	}
 
+	// Print configuration information
+	fmt.Println("\nCommit Message Configuration:")
+	fmt.Println("===========================")
+	fmt.Printf("Using %s rules from: %s\n", rules.Source, rules.Path)
+	fmt.Println()
+
 	// Print branch information
-	fmt.Println("\nCurrent Branch Information:")
+	fmt.Println("Current Branch Information:")
 	fmt.Println("=========================")
 	fmt.Printf("Branch: %s\n", branchName)
 	fmt.Println()
@@ -712,35 +735,47 @@ func getGitDiff() (string, error) {
 	return combinedDiff, nil
 }
 
-func getAutocommitRules() (string, error) {
+func getAutocommitRules() (AutocommitRules, error) {
 	// Get current working directory
 	currentDir, err := os.Getwd()
 	if err != nil {
-		return "", fmt.Errorf("error getting current directory: %v", err)
+		return AutocommitRules{}, fmt.Errorf("error getting current directory: %v", err)
 	}
 
 	// First, check for user's .autocommit.md in project root
 	userRulesPath := filepath.Join(currentDir, ".autocommit.md")
 	content, err := os.ReadFile(userRulesPath)
 	if err == nil {
-		return string(content), nil
+		return AutocommitRules{
+			Rules:  string(content),
+			Source: "project",
+			Path:   userRulesPath,
+		}, nil
 	}
 
 	// If not found in project root, check executable directory for default rules
 	exePath, err := os.Executable()
 	if err != nil {
-		return "", fmt.Errorf("error getting executable path: %v", err)
+		return AutocommitRules{}, fmt.Errorf("error getting executable path: %v", err)
 	}
 
 	exeDir := filepath.Dir(exePath)
 	defaultRulesPath := filepath.Join(exeDir, ".autocommit.md")
 	content, err = os.ReadFile(defaultRulesPath)
-	if err != nil {
-		// Default rules if no .autocommit.md is found anywhere
-		return "Please follow the Conventional Commits format: <type>(<scope>): <description>", nil
+	if err == nil {
+		return AutocommitRules{
+			Rules:  string(content),
+			Source: "default",
+			Path:   defaultRulesPath,
+		}, nil
 	}
 
-	return string(content), nil
+	// Default rules if no .autocommit.md is found anywhere
+	return AutocommitRules{
+		Rules:  "Please follow the Conventional Commits format: <type>(<scope>): <description>",
+		Source: "root",
+		Path:   "built-in",
+	}, nil
 }
 
 func getCurrentBranch() (string, error) {
@@ -808,7 +843,11 @@ func generateCommitMessage(apiKey, diff string, customContext string) (string, e
 	rules, err := getAutocommitRules()
 	if err != nil {
 		fmt.Printf("Warning: Could not load autocommit rules: %v\n", err)
-		rules = "Please follow the Conventional Commits format: <type>(<scope>): <description>"
+		rules = AutocommitRules{
+			Rules:  "Please follow the Conventional Commits format: <type>(<scope>): <description>",
+			Source: "root",
+			Path:   "built-in",
+		}
 	}
 
 	// Create prompt for OpenAI
@@ -823,7 +862,7 @@ func generateCommitMessage(apiKey, diff string, customContext string) (string, e
 		branchName,
 		lastCommitInfo,
 		customContext,
-		rules,
+		rules.Rules,
 	)
 
 	// Create chat completion request
