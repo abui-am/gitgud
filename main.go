@@ -588,9 +588,22 @@ func handleAutoCommit() {
 		os.Exit(0)
 	}
 
+	// Prompt for custom context
+	fmt.Println("\nEnter additional context for the commit message (press Enter to finish):")
+	fmt.Println("(This context will help generate a more relevant commit message)")
+
+	reader := bufio.NewReader(os.Stdin)
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Printf("Error reading input: %v\n", err)
+		os.Exit(1)
+	}
+
+	customContext := strings.TrimSpace(line)
+
 	// Generate commit message using OpenAI
-	fmt.Println("Generating commit message with AI...")
-	commitMsg, err := generateCommitMessage(apiKey, diff)
+	fmt.Println("\nGenerating commit message with AI...")
+	commitMsg, err := generateCommitMessage(apiKey, diff, customContext)
 	if err != nil {
 		fmt.Printf("Error generating commit message: %v\n", err)
 		fmt.Println("This could be due to an invalid or expired API key.")
@@ -602,7 +615,6 @@ func handleAutoCommit() {
 	fmt.Printf("\nGenerated commit message:\n\n%s\n\n", commitMsg)
 	fmt.Print("Do you want to commit with this message? (y/n): ")
 
-	reader := bufio.NewReader(os.Stdin)
 	response, err := reader.ReadString('\n')
 	if err != nil {
 		fmt.Printf("Error reading input: %v\n", err)
@@ -745,7 +757,7 @@ func getLastCommitMetadata() (string, error) {
 	), nil
 }
 
-func generateCommitMessage(apiKey, diff string) (string, error) {
+func generateCommitMessage(apiKey, diff string, customContext string) (string, error) {
 	// Initialize OpenAI client
 	client := openai.NewClient(apiKey)
 
@@ -782,11 +794,13 @@ func generateCommitMessage(apiKey, diff string) (string, error) {
 		"Generate a commit message for the following git diff:\n\n%s\n\n"+
 			"Current branch: %s\n"+
 			"%s\n\n"+
+			"Additional context provided by the user:\n%s\n\n"+
 			"Must follow these rules for the commit message:\n%s\n\n"+
 			"Reply with ONLY the commit message, nothing else.",
 		diffContent,
 		branchName,
 		lastCommitInfo,
+		customContext,
 		rules,
 	)
 
