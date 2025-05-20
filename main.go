@@ -661,28 +661,31 @@ func getGitDiff() (string, error) {
 }
 
 func getAutocommitRules() (string, error) {
-	// Check if .autocommit.md exists in the current directory
+	// Get current working directory
 	currentDir, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("error getting current directory: %v", err)
 	}
 
-	rulesPath := filepath.Join(currentDir, ".autocommit.md")
-	content, err := os.ReadFile(rulesPath)
-	if err != nil {
-		// If not found in current directory, check executable directory
-		exePath, err := os.Executable()
-		if err != nil {
-			return "", fmt.Errorf("error getting executable path: %v", err)
-		}
+	// First, check for user's .autocommit.md in project root
+	userRulesPath := filepath.Join(currentDir, ".autocommit.md")
+	content, err := os.ReadFile(userRulesPath)
+	if err == nil {
+		return string(content), nil
+	}
 
-		exeDir := filepath.Dir(exePath)
-		rulesPath = filepath.Join(exeDir, ".autocommit.md")
-		content, err = os.ReadFile(rulesPath)
-		if err != nil {
-			// Default rules if .autocommit.md is not found
-			return "Please follow the Conventional Commits format: <type>(<scope>): <description>", nil
-		}
+	// If not found in project root, check executable directory for default rules
+	exePath, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("error getting executable path: %v", err)
+	}
+
+	exeDir := filepath.Dir(exePath)
+	defaultRulesPath := filepath.Join(exeDir, ".autocommit.md")
+	content, err = os.ReadFile(defaultRulesPath)
+	if err != nil {
+		// Default rules if no .autocommit.md is found anywhere
+		return "Please follow the Conventional Commits format: <type>(<scope>): <description>", nil
 	}
 
 	return string(content), nil

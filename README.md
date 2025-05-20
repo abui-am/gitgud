@@ -1,12 +1,16 @@
 ![Group 1 (2)](https://github.com/user-attachments/assets/a642c270-1e2a-499e-880e-a4feec914445)
+
 ```bash
 Generating commit message with AI...
 Generated commit message:
 feat(auto): allow customizable autocommit rules via .autocommit.md
 Do you want to commit with this message? (y/n):
 ```
+
 ## Features
+
 ![download](https://github.com/user-attachments/assets/edbe19aa-129f-49c5-bd31-53bf04b73a44)
+
 - Executes all standard Git commands
 - Provides cleaner success messages
 - Passes all arguments to the underlying Git command
@@ -115,9 +119,25 @@ This file will be created automatically if you run the autocommit command and ch
 
 ### Customizing Autocommit Rules
 
-You can modify the commit message format by creating or editing the `.autocommit.md` file. This file contains the rules that will be sent to the AI when generating commit messages.
+You can customize the commit message format by creating or editing the `.autocommit.md` file. This file contains the rules that will be sent to the AI when generating commit messages.
 
-Note: The `.autocommit.md` file is listed in `.gitignore`, so you'll need to create it manually in each repository where you use this tool. This ensures your commit message customizations don't get committed to your repository.
+The application follows this hierarchy for finding autocommit rules:
+
+1. Project root `.autocommit.md` (highest priority)
+
+   - Create this file in your project's root directory to override default rules
+   - This file is listed in `.gitignore`, so it won't be committed to your repository
+   - Perfect for project-specific commit message conventions
+
+2. Default `.autocommit.md` (fallback)
+
+   - Located in the same directory as the `gg` executable
+   - Used when no project-specific rules are found
+   - Provides sensible defaults for all users
+
+3. Built-in default (lowest priority)
+   - Used only if no `.autocommit.md` files are found
+   - Follows the Conventional Commits format
 
 Example `.autocommit.md` content:
 
