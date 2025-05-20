@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -700,6 +701,49 @@ func getCurrentBranch() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
+func getLastCommitTime() (time.Time, error) {
+	cmd := exec.Command("git", "log", "-1", "--format=%at")
+	output, err := cmd.Output()
+	if err != nil {
+		return time.Time{}, fmt.Errorf("error getting last commit time: %v", err)
+	}
+
+	// Convert Unix timestamp to time.Time
+	timestamp, err := strconv.ParseInt(strings.TrimSpace(string(output)), 10, 64)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("error parsing timestamp: %v", err)
+	}
+
+	return time.Unix(timestamp, 0), nil
+}
+
+func formatTimeSpent(duration time.Duration) string {
+	hours := int(duration.Hours())
+	minutes := int(duration.Minutes()) % 60
+
+	if hours > 0 && minutes > 0 {
+		return fmt.Sprintf("%dh %dm", hours, minutes)
+	} else if hours > 0 {
+		return fmt.Sprintf("%dh", hours)
+	} else {
+		return fmt.Sprintf("%dm", minutes)
+	}
+}
+
+func getTimeSpent() (string, error) {
+	lastCommitTime, err := getLastCommitTime()
+	if err != nil {
+		// If there's no previous commit, return empty string
+		if strings.Contains(err.Error(), "fatal: bad default revision") {
+			return "", nil
+		}
+		return "", err
+	}
+
+	duration := time.Since(lastCommitTime)
+	return formatTimeSpent(duration), nil
+}
+
 func generateCommitMessage(apiKey, diff string) (string, error) {
 	// Initialize OpenAI client
 	client := openai.NewClient(apiKey)
@@ -709,6 +753,13 @@ func generateCommitMessage(apiKey, diff string) (string, error) {
 	if err != nil {
 		fmt.Printf("Warning: Could not get current branch name: %v\n", err)
 		branchName = "unknown"
+	}
+
+	// Get time spent since last commit
+	timeSpent, err := getTimeSpent()
+	if err != nil {
+		fmt.Printf("Warning: Could not calculate time spent: %v\n", err)
+		timeSpent = ""
 	}
 
 	// Truncate diff if it's too large (OpenAI has token limits)
@@ -728,11 +779,13 @@ func generateCommitMessage(apiKey, diff string) (string, error) {
 	// Create prompt for OpenAI
 	prompt := fmt.Sprintf(
 		"Generate a commit message for the following git diff:\n\n%s\n\n"+
-			"Current branch: %s\n\n"+
+			"Current branch: %s\n"+
+			"Time spent: %s\n\n"+
 			"Must follow these rules for the commit message:\n%s\n\n"+
 			"Reply with ONLY the commit message, nothing else.",
 		diffContent,
 		branchName,
+		timeSpent,
 		rules,
 	)
 

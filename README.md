@@ -188,19 +188,21 @@ The `autocommit` command (or its shorter alias `ac`):
 
 1. Automatically detects all changes in your repository
 2. Includes the current branch name for context-aware commit messages
-3. Sends the diff to OpenAI to generate a meaningful commit message following the Conventional Commits format
-4. Shows you the suggested commit message and asks for confirmation
-5. If you confirm, stages all changes and commits them with the AI-generated message
+3. Calculates time spent since the last commit
+4. Sends the diff to OpenAI to generate a meaningful commit message following the Conventional Commits format
+5. Shows you the suggested commit message and asks for confirmation
+6. If you confirm, stages all changes and commits them with the AI-generated message
 
 **Important**: You can customize the commit message format by creating or editing the `.autocommit.md` file. Since this file is in `.gitignore`, you'll need to create it in each repository where you use this tool.
 
 The AI assistant takes into account:
 
 - The current branch name (e.g., `feature/user-auth`, `fix/login-bug`)
+- Time spent since the last commit (e.g., "1h 30m", "45m")
 - The changes in your working directory
 - Your custom commit message rules from `.autocommit.md`
 
-This helps generate more contextually relevant commit messages that align with your branch's purpose.
+This helps generate more contextually relevant commit messages that align with your branch's purpose and development time.
 
 Example:
 
