@@ -251,88 +251,89 @@ Common types include:
 
 ## Custom Context
 
-GitGud provides a powerful custom context feature that allows you to enhance your commit messages with additional information. This feature enables you to provide specific context to the AI assistant, which then uses this information along with the last commit details and branch name to generate more meaningful and structured commit messages.
+### What is Custom Context?
 
-### How It Works
+Custom context is a powerful feature in GitGud that helps you create more meaningful commit messages. It allows you to provide additional information about your changes, which the AI assistant uses along with your branch name and last commit details to generate better commit messages.
 
-When you run `gg autocommit` or `gg ac`, GitGud will:
+### How to Use Custom Context
 
-1. Analyze your current branch name
-2. Gather information from the last commit
-3. Prompt you for custom context
-4. Use all this information to generate an AI-powered commit message
+1. **Setup Your Rules**
+   Create a `.autocommit.md` file in your project root:
 
-### Custom Context Tags
+   ```markdown
+   Please follow the Conventional Commits format: <type>(<scope>): <#time> <description>
 
-You can use special tags in your custom context to provide structured information. These tags help the AI understand specific aspects of your changes:
+   - #time: The time spent on the task (use the #time tag in the custom context to add the time spent on the task)
 
-- `#time`: Time spent on the task (e.g., `#1h`, `#30m`, `#2d`)
-- `#complexity`: Complexity level of the changes (e.g., `#complexity:high`)
-- `#impact`: Impact of the changes (e.g., `#impact:critical`)
-- `#ticket`: Related ticket or issue number (e.g., `#ticket:PROJ-123`)
+   Example:
+   feat(auth): #1h add login form
 
-### Example Setup
+   Types:
 
-Create a `.autocommit.md` file in your project root with the following content:
+   - feat: A new feature
+   - fix: A bug fix
+   - docs: Documentation changes
+   ```
 
-```markdown
-Please follow the Conventional Commits format: <type>(<scope>): <#time> <description>
-
-- #time: The time spent on the task (use the #time tag in the custom context to add the time spent on the task)
-
-Example:
-feat(auth): #1h add login form
-
-Types:
-
-- feat: A new feature
-- fix: A bug fix
-- docs: Documentation changes
-```
-
-### Example Usage
-
-1. Run the autocommit command:
+2. **Run Autocommit**
 
    ```bash
    gg autocommit
    ```
 
-2. When prompted for custom context, enter your time:
+3. **Add Your Context**
+   When prompted, enter your time spent:
 
    ```
    #1h
    ```
 
-3. The AI will use the last commit information and branch name to generate a commit message:
+4. **Review Generated Message**
+   The AI will create a commit message using your context:
    ```
-   feat(auth): #1h add login form #time 1h
+   feat(auth): #1h add login form
    ```
 
-### Integration with Last Commit
+### How It Works
 
-The custom context is combined with information from the last commit to provide better context for the AI. This includes:
+GitGud combines three sources of information to generate your commit message:
 
-- Last commit hash
-- Author name
-- Commit date
-- Previous commit message
+1. **Your Custom Context**
 
-This helps the AI understand the progression of changes and generate more relevant commit messages.
+   - Time spent on the task
+   - Any additional tags you provide
 
-### Branch Name Context
+2. **Last Commit Information**
 
-The current branch name is also used as context. For example:
+   - Commit hash
+   - Author name
+   - Commit date
+   - Previous commit message
 
-- `feature/user-auth` suggests authentication-related changes
-- `fix/login-bug` indicates a bug fix in the login functionality
-- `docs/api-update` suggests documentation updates
+3. **Branch Name**
+   - `feature/user-auth` → Authentication-related changes
+   - `fix/login-bug` → Bug fixes in login
+   - `docs/api-update` → Documentation updates
 
 ### Troubleshooting
 
-If your custom context isn't being properly incorporated into the commit message:
+If your custom context isn't working as expected:
 
-1. Check your `.autocommit.md` file format
-2. Ensure you're using the correct tag format
-3. Verify that your custom context is being entered correctly when prompted
-4. Check if the AI is following your custom rules by examining the generated commit message
+1. **Check File Format**
+
+   - Ensure your `.autocommit.md` file is in the correct location
+   - Verify the file format matches the example
+
+2. **Verify Tag Usage**
+
+   - Make sure you're using the correct tag format
+   - Check that tags are properly formatted (e.g., `#1h` not `1h`)
+
+3. **Check Input**
+
+   - Confirm your custom context is entered correctly
+   - Ensure there are no extra spaces or special characters
+
+4. **Review Output**
+   - Check if the AI is following your custom rules
+   - Verify the generated commit message format
