@@ -174,6 +174,7 @@ Common types include:
 ./gg diff                        # View differences
 ./gg autocommit                  # Auto-add all changes and generate AI commit message
 ./gg ac                          # Alias for autocommit
+./gg last                        # Show detailed information about the last commit
 ./gg branch                      # List, create, or delete branches
 ./gg checkout <branch>           # Switch branches
 ./gg push                        # Push to remote repository
@@ -182,13 +183,29 @@ Common types include:
 
 GitGud passes all arguments directly to Git, so any valid Git command and options will work.
 
+### Viewing Last Commit Information
+
+The `last` command provides detailed information about the most recent commit:
+
+```
+./gg last
+```
+
+This will show:
+
+- Commit hash
+- Author name
+- Commit date
+- Commit message
+- Detailed changes (files modified, insertions, deletions)
+
 ## Using Autocommit
 
 The `autocommit` command (or its shorter alias `ac`):
 
 1. Automatically detects all changes in your repository
 2. Includes the current branch name for context-aware commit messages
-3. Calculates time spent since the last commit
+3. Provides context from the last commit (hash, author, date, and message)
 4. Sends the diff to OpenAI to generate a meaningful commit message following the Conventional Commits format
 5. Shows you the suggested commit message and asks for confirmation
 6. If you confirm, stages all changes and commits them with the AI-generated message
@@ -198,11 +215,11 @@ The `autocommit` command (or its shorter alias `ac`):
 The AI assistant takes into account:
 
 - The current branch name (e.g., `feature/user-auth`, `fix/login-bug`)
-- Time spent since the last commit (e.g., "1h 30m", "45m")
+- Last commit information (e.g., "Last commit: a1b2c3d by John Doe on Mon Jan 1 12:00:00 2024 - feat: initial implementation")
 - The changes in your working directory
 - Your custom commit message rules from `.autocommit.md`
 
-This helps generate more contextually relevant commit messages that align with your branch's purpose and development time.
+This helps generate more contextually relevant commit messages that align with your branch's purpose and development history.
 
 Example:
 
