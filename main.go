@@ -691,9 +691,25 @@ func getAutocommitRules() (string, error) {
 	return string(content), nil
 }
 
+func getCurrentBranch() (string, error) {
+	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("error getting current branch: %v", err)
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
 func generateCommitMessage(apiKey, diff string) (string, error) {
 	// Initialize OpenAI client
 	client := openai.NewClient(apiKey)
+
+	// Get current branch name
+	branchName, err := getCurrentBranch()
+	if err != nil {
+		fmt.Printf("Warning: Could not get current branch name: %v\n", err)
+		branchName = "unknown"
+	}
 
 	// Truncate diff if it's too large (OpenAI has token limits)
 	maxDiffLength := 4000
@@ -704,7 +720,6 @@ func generateCommitMessage(apiKey, diff string) (string, error) {
 
 	// Get autocommit rules
 	rules, err := getAutocommitRules()
-
 	if err != nil {
 		fmt.Printf("Warning: Could not load autocommit rules: %v\n", err)
 		rules = "Please follow the Conventional Commits format: <type>(<scope>): <description>"
@@ -713,9 +728,11 @@ func generateCommitMessage(apiKey, diff string) (string, error) {
 	// Create prompt for OpenAI
 	prompt := fmt.Sprintf(
 		"Generate a commit message for the following git diff:\n\n%s\n\n"+
+			"Current branch: %s\n\n"+
 			"Must follow these rules for the commit message:\n%s\n\n"+
 			"Reply with ONLY the commit message, nothing else.",
 		diffContent,
+		branchName,
 		rules,
 	)
 

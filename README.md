@@ -187,11 +187,20 @@ GitGud passes all arguments directly to Git, so any valid Git command and option
 The `autocommit` command (or its shorter alias `ac`):
 
 1. Automatically detects all changes in your repository
-2. Sends the diff to OpenAI to generate a meaningful commit message following the Conventional Commits format
-3. Shows you the suggested commit message and asks for confirmation
-4. If you confirm, stages all changes and commits them with the AI-generated message
+2. Includes the current branch name for context-aware commit messages
+3. Sends the diff to OpenAI to generate a meaningful commit message following the Conventional Commits format
+4. Shows you the suggested commit message and asks for confirmation
+5. If you confirm, stages all changes and commits them with the AI-generated message
 
 **Important**: You can customize the commit message format by creating or editing the `.autocommit.md` file. Since this file is in `.gitignore`, you'll need to create it in each repository where you use this tool.
+
+The AI assistant takes into account:
+
+- The current branch name (e.g., `feature/user-auth`, `fix/login-bug`)
+- The changes in your working directory
+- Your custom commit message rules from `.autocommit.md`
+
+This helps generate more contextually relevant commit messages that align with your branch's purpose.
 
 Example:
 
