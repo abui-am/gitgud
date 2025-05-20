@@ -550,12 +550,25 @@ func handleAutoCommit() {
 		os.Exit(1)
 	}
 
+	// Get current branch name
+	branchName, err := getCurrentBranch()
+	if err != nil {
+		fmt.Printf("Warning: Could not get current branch name: %v\n", err)
+		branchName = "unknown"
+	}
+
 	// Inform users they can modify the rules
 	fmt.Println("Note: You can customize the commit message format by creating or editing the .autocommit.md file.")
 	fmt.Println("      This file is not tracked by Git (it's in .gitignore).")
 
+	// Print branch information
+	fmt.Println("\nCurrent Branch Information:")
+	fmt.Println("=========================")
+	fmt.Printf("Branch: %s\n", branchName)
+	fmt.Println()
+
 	// Print last commit information
-	fmt.Println("\nLast Commit Information:")
+	fmt.Println("Last Commit Information:")
 	fmt.Println("=======================")
 	lastCommitInfo, err := getLastCommitMetadata()
 	if err != nil {
@@ -840,19 +853,8 @@ func handleLastCommit() {
 		os.Exit(1)
 	}
 
-	// Get additional commit details
-	cmd := exec.Command("git", "log", "-1", "--stat")
-	output, err := cmd.Output()
-	if err != nil {
-		fmt.Printf("Error getting commit details: %v\n", err)
-		os.Exit(1)
-	}
-
 	// Print the information
 	fmt.Println("\nLast Commit Information:")
 	fmt.Println("=======================")
 	fmt.Println(lastCommitInfo)
-	fmt.Println("\nChanges:")
-	fmt.Println("========")
-	fmt.Println(string(output))
 }
