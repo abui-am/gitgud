@@ -557,9 +557,18 @@ func handleAutoCommit() {
 		branchName = "unknown"
 	}
 
-	// Inform users they can modify the rules
-	fmt.Println("Note: You can customize the commit message format by creating or editing the .autocommit.md file.")
-	fmt.Println("      This file is not tracked by Git (it's in .gitignore).")
+	// Check if user has a custom .autocommit.md file
+	currentDir, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("Warning: Could not get current directory: %v\n", err)
+	} else {
+		userRulesPath := filepath.Join(currentDir, ".autocommit.md")
+		if _, err := os.Stat(userRulesPath); os.IsNotExist(err) {
+			// Only show the note if no custom .autocommit.md exists
+			fmt.Println("Note: You can customize the commit message format by creating or editing the .autocommit.md file.")
+			fmt.Println("      This file is not tracked by Git (it's in .gitignore).")
+		}
+	}
 
 	// Print branch information
 	fmt.Println("\nCurrent Branch Information:")
