@@ -315,6 +315,295 @@ GitGud combines three sources of information to generate your commit message:
    - `fix/login-bug` → Bug fixes in login
    - `docs/api-update` → Documentation updates
 
+### Examples of Using Custom Context
+
+1. **Time Tracking**
+
+   ```bash
+   # .autocommit.md configuration
+   Please follow the Conventional Commits format: <type>(<scope>): <#time> <description>
+   - #time: The time spent on the task (use the #time tag in the custom context)
+
+   Example:
+   feat(auth): #1h add login form
+
+   Types:
+   - feat: A new feature
+   - fix: A bug fix
+   - docs: Documentation changes
+   ```
+
+   ```bash
+   # Create feature branch
+   gg checkout -b feature/user-auth
+
+   # Make changes to auth system...
+
+   # Commit with time context
+   gg autocommit
+   # Enter: #2h
+
+   # Result:
+   feat(auth): #2h implement OAuth2 authentication
+   ```
+
+2. **Multiple Context Tags**
+
+   ```bash
+   # .autocommit.md configuration
+   Please follow the Conventional Commits format: <type>(<scope>): <#time> <description> <#complexity> <#impact>
+   - #time: Time spent on the task
+   - #complexity: Complexity level (low/medium/high)
+   - #impact: Impact level (low/medium/high/critical)
+
+   Example:
+   fix(auth): #1h resolve validation #complexity:high #impact:critical
+
+   Types:
+   - feat: A new feature
+   - fix: A bug fix
+   - docs: Documentation changes
+   ```
+
+   ```bash
+   # Create fix branch
+   gg checkout -b fix/login-validation
+
+   # Fix validation issues...
+
+   # Commit with multiple context tags
+   gg autocommit
+   # Enter: #1h #complexity:high #impact:critical
+
+   # Result:
+   fix(auth): #1h resolve login validation issues #complexity:high #impact:critical
+   ```
+
+### Branch Name Context
+
+1. **Feature Branch**
+
+   ```bash
+   # .autocommit.md configuration
+   Please follow the Conventional Commits format: <type>(<scope>): <#time> <description>
+   - #time: The time spent on the task
+   - Scope should match branch name prefix (feature/fix/docs)
+
+   Example:
+   feat(payment): #2h add payment processing
+
+   Types:
+   - feat: A new feature
+   - fix: A bug fix
+   - docs: Documentation changes
+   ```
+
+   ```bash
+   # Branch name indicates feature type
+   gg checkout -b feature/payment-gateway
+
+   # Implement payment system...
+
+   # Commit with time context
+   gg autocommit
+   # Enter: #4h
+
+   # Result:
+   feat(payment): #4h implement Stripe payment integration
+   ```
+
+2. **Bug Fix Branch**
+
+   ```bash
+   # .autocommit.md configuration
+   Please follow the Conventional Commits format: <type>(<scope>): <#time> <description>
+   - #time: The time spent on the task
+   - Scope should match branch name prefix (feature/fix/docs)
+
+   Example:
+   fix(api): #1h resolve timeout issues
+
+   Types:
+   - feat: A new feature
+   - fix: A bug fix
+   - docs: Documentation changes
+   ```
+
+   ```bash
+   # Branch name indicates bug fix
+   gg checkout -b fix/api-timeout
+
+   # Fix timeout issues...
+
+   # Commit with time context
+   gg autocommit
+   # Enter: #1h
+
+   # Result:
+   fix(api): #1h resolve request timeout issues
+   ```
+
+### Last Commit Context
+
+1. **Related Feature**
+
+   ```bash
+   # .autocommit.md configuration
+   Please follow the Conventional Commits format: <type>(<scope>): <#time> <description>
+   - #time: The time spent on the task
+   - Consider last commit context for related changes
+
+   Example:
+   feat(profile): #2h add user settings
+
+   Types:
+   - feat: A new feature
+   - fix: A bug fix
+   - docs: Documentation changes
+   ```
+
+   ```bash
+   # Previous commit: feat(auth): #2h add login form
+   # Current branch: feature/user-profile
+
+   # Add profile functionality...
+
+   # Commit with time context
+   gg autocommit
+   # Enter: #3h
+
+   # Result:
+   feat(profile): #3h implement user profile management
+   ```
+
+2. **Bug Fix Follow-up**
+
+   ```bash
+   # .autocommit.md configuration
+   Please follow the Conventional Commits format: <type>(<scope>): <#time> <description>
+   - #time: The time spent on the task
+   - Consider last commit context for related fixes
+
+   Example:
+   fix(auth): #1h handle edge cases
+
+   Types:
+   - feat: A new feature
+   - fix: A bug fix
+   - docs: Documentation changes
+   ```
+
+   ```bash
+   # Previous commit: fix(auth): #1h resolve login validation
+   # Current branch: fix/auth-edge-cases
+
+   # Fix additional edge cases...
+
+   # Commit with time context
+   gg autocommit
+   # Enter: #2h
+
+   # Result:
+   fix(auth): #2h handle additional login edge cases
+   ```
+
+### Combined Context Examples
+
+1. **Feature with Related Fix**
+
+   ```bash
+   # .autocommit.md configuration
+   Please follow the Conventional Commits format: <type>(<scope>): <branch-name> <#time> <description>
+   - #time: The time spent on the task
+   - branch-name: The name of the branch (will be the card name from JIRA)
+   - Consider both branch name and last commit context
+
+   Example:
+   fix(payment): #1h improve validation
+
+   Types:
+   - feat: JIRA-1234: A new feature
+   - fix: JIRA-1235: A bug fix
+   - docs: JIRA-1236: Documentation changes
+   ```
+
+   ```bash
+   # Previous commit: feat(payment): #4h add payment processing
+   # Current branch: JIRA-1235
+
+   # Fix payment validation...
+
+   # Commit with time context
+   gg autocommit
+   # Enter: #1h
+
+   # Result:
+   fix(payment): JIRA-1235 #1h improve payment validation rules
+   ```
+
+2. **Documentation Update**
+
+   ```bash
+   # .autocommit.md configuration
+   Please follow the Conventional Commits format: <type>(<scope>): <#time> <description>
+   - #time: The time spent on the task
+   - Consider last commit for related documentation
+
+   Example:
+   docs(api): #1h update endpoint docs
+
+   Types:
+   - feat: A new feature
+   - fix: A bug fix
+   - docs: Documentation changes
+   ```
+
+   ```bash
+   # Previous commit: feat(api): #3h add new endpoints
+   # Current branch: docs/api-update
+
+   # Update API documentation...
+
+   # Commit with time context
+   gg autocommit
+   # Enter: #2h
+
+   # Result:
+   docs(api): #2h document new API endpoints
+   ```
+
+3. **Refactoring with Context**
+
+   ```bash
+   # .autocommit.md configuration
+   Please follow the Conventional Commits format: <type>(<scope>): <#time> <description>
+   - #time: The time spent on the task
+   - Consider last commit for related refactoring
+
+   Example:
+   refactor(ui): #2h optimize components
+
+   Types:
+   - feat: A new feature
+   - fix: A bug fix
+   - docs: Documentation changes
+   - refactor: Code restructuring
+   ```
+
+   ```bash
+   # Previous commit: feat(ui): #5h implement dashboard
+   # Current branch: refactor/optimize-ui
+
+   # Optimize UI components...
+
+   # Commit with time context
+   gg autocommit
+   # Enter: #3h
+
+   # Result:
+   refactor(ui): #3h optimize dashboard performance
+   ```
+
 ### Troubleshooting
 
 If your custom context isn't working as expected:
