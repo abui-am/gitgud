@@ -248,7 +248,91 @@ Common types include:
 - `docs`: Documentation changes
 - `style`: Changes that don't affect code functionality (formatting, etc.)
 - `refactor`: Code changes that neither fix bugs nor add features
-- `test`: Adding or fixing tests
-- `chore`: Changes to the build process or auxiliary tools
 
-You can customize the commit message format by creating or editing the `.autocommit.md` file.
+## Custom Context
+
+GitGud provides a powerful custom context feature that allows you to enhance your commit messages with additional information. This feature enables you to provide specific context to the AI assistant, which then uses this information along with the last commit details and branch name to generate more meaningful and structured commit messages.
+
+### How It Works
+
+When you run `gg autocommit` or `gg ac`, GitGud will:
+
+1. Analyze your current branch name
+2. Gather information from the last commit
+3. Prompt you for custom context
+4. Use all this information to generate an AI-powered commit message
+
+### Custom Context Tags
+
+You can use special tags in your custom context to provide structured information. These tags help the AI understand specific aspects of your changes:
+
+- `#time`: Time spent on the task (e.g., `#1h`, `#30m`, `#2d`)
+- `#complexity`: Complexity level of the changes (e.g., `#complexity:high`)
+- `#impact`: Impact of the changes (e.g., `#impact:critical`)
+- `#ticket`: Related ticket or issue number (e.g., `#ticket:PROJ-123`)
+
+### Example Setup
+
+Create a `.autocommit.md` file in your project root with the following content:
+
+```markdown
+Please follow the Conventional Commits format: <type>(<scope>): <#time> <description>
+
+- #time: The time spent on the task (use the #time tag in the custom context to add the time spent on the task)
+
+Example:
+feat(auth): #1h add login form
+
+Types:
+
+- feat: A new feature
+- fix: A bug fix
+- docs: Documentation changes
+```
+
+### Example Usage
+
+1. Run the autocommit command:
+
+   ```bash
+   gg autocommit
+   ```
+
+2. When prompted for custom context, enter your time:
+
+   ```
+   #1h
+   ```
+
+3. The AI will use the last commit information and branch name to generate a commit message:
+   ```
+   feat(auth): #1h add login form #time 1h
+   ```
+
+### Integration with Last Commit
+
+The custom context is combined with information from the last commit to provide better context for the AI. This includes:
+
+- Last commit hash
+- Author name
+- Commit date
+- Previous commit message
+
+This helps the AI understand the progression of changes and generate more relevant commit messages.
+
+### Branch Name Context
+
+The current branch name is also used as context. For example:
+
+- `feature/user-auth` suggests authentication-related changes
+- `fix/login-bug` indicates a bug fix in the login functionality
+- `docs/api-update` suggests documentation updates
+
+### Troubleshooting
+
+If your custom context isn't being properly incorporated into the commit message:
+
+1. Check your `.autocommit.md` file format
+2. Ensure you're using the correct tag format
+3. Verify that your custom context is being entered correctly when prompted
+4. Check if the AI is following your custom rules by examining the generated commit message
