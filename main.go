@@ -121,7 +121,7 @@ func main() {
 			fmt.Println("  log                     Show commit logs")
 			fmt.Println("  diff                    Show changes between commits, commit and working tree, etc")
 			fmt.Println("  autocommit (or ac)      Automatically add all changes and generate commit message using AI")
-			fmt.Println("  autocommit-per-file (or acpf)  Interactively commit files one by one with AI-generated messages")
+			fmt.Println("  autocommit-per-file (or acpf)  Interactively select and batch commit files with AI-generated messages")
 			fmt.Println("  config                  View or update your configuration settings")
 			fmt.Println("  branch                  List, create, or delete branches")
 			fmt.Println("  checkout                Switch branches or restore working tree files")
@@ -758,7 +758,7 @@ func handleAutoCommitPerFile() {
 			continue
 		}
 
-		// Process each selected file
+		// Process each selected file individually
 		for _, file := range selectedFiles {
 			fmt.Printf("\n--- Processing file: %s ---\n", file)
 
@@ -828,7 +828,7 @@ func handleAutoCommitPerFile() {
 			}
 		}
 
-		fmt.Println("\n--- Batch complete ---")
+		fmt.Println("\n--- Processing complete ---")
 		fmt.Print("Continue with remaining files? (y/n): ")
 		continueResponse, err := reader.ReadString('\n')
 		if err != nil {
