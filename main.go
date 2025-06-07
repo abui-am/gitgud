@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/manifoldco/promptui"
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -44,6 +45,7 @@ func main() {
 		fmt.Println("  log")
 		fmt.Println("  diff")
 		fmt.Println("  autocommit (or ac)")
+		fmt.Println("  autocommit-per-file (or acpf)")
 		fmt.Println("  config")
 		fmt.Println("  last")
 		os.Exit(1)
@@ -79,6 +81,8 @@ func main() {
 		executeGitCommand("diff")
 	case "autocommit", "ac":
 		handleAutoCommit()
+	case "autocommit-per-file", "acpf":
+		handleAutoCommitPerFile()
 	case "config":
 		handleConfig()
 	case "last":
@@ -117,6 +121,7 @@ func main() {
 			fmt.Println("  log                     Show commit logs")
 			fmt.Println("  diff                    Show changes between commits, commit and working tree, etc")
 			fmt.Println("  autocommit (or ac)      Automatically add all changes and generate commit message using AI")
+			fmt.Println("  autocommit-per-file (or acpf)  Interactively commit files one by one with AI-generated messages")
 			fmt.Println("  config                  View or update your configuration settings")
 			fmt.Println("  branch                  List, create, or delete branches")
 			fmt.Println("  checkout                Switch branches or restore working tree files")
@@ -685,6 +690,442 @@ func handleAutoCommit() {
 	} else {
 		fmt.Println("Commit canceled.")
 	}
+}
+
+func handleAutoCommitPerFile() {
+	// Get OpenAI API key using our existing function
+	apiKey, err := getOpenAIAPIKey()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		fmt.Println("You can reset your configuration by running 'gg config reset'")
+		os.Exit(1)
+	}
+
+	if apiKey == "" {
+		fmt.Println("Error: OpenAI API key is required for autocommit per file")
+		fmt.Println("Please run 'gg config reset' to set up your API key")
+		os.Exit(1)
+	}
+
+	// Try to validate the key again just to be sure
+	valid, err := validateAPIKey(apiKey)
+	if !valid {
+		fmt.Printf("Error: The API key is invalid: %v\n", err)
+		fmt.Println("Please run 'gg config reset' to update your API key")
+		os.Exit(1)
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Println("=== Autocommit Per File ===")
+	fmt.Println("This will help you commit files individually with AI-generated commit messages.")
+	fmt.Println("Use arrow keys to navigate and select files. You can select multiple files interactively.")
+	fmt.Println()
+
+	for {
+		// Get list of changed files
+		changedFiles, err := getChangedFiles()
+		if err != nil {
+			fmt.Printf("Error getting changed files: %v\n", err)
+			os.Exit(1)
+		}
+
+		if len(changedFiles) == 0 {
+			fmt.Println("No changes to commit. Working tree clean.")
+			break
+		}
+
+		// Display changed files
+		fmt.Println("Changed files:")
+		for i, file := range changedFiles {
+			fmt.Printf("  %d. %s\n", i+1, file)
+		}
+		fmt.Println()
+
+		// Use arrow key selection for file selection
+		selectedFiles, err := selectMultipleFilesWithArrows(changedFiles)
+		if err != nil {
+			if strings.Contains(err.Error(), "user chose to exit") {
+				fmt.Println("Exiting autocommit per file.")
+				break
+			}
+			fmt.Printf("Error in file selection: %v\n", err)
+			continue
+		}
+
+		if len(selectedFiles) == 0 {
+			fmt.Println("No files selected.")
+			continue
+		}
+
+		// Process each selected file
+		for _, file := range selectedFiles {
+			fmt.Printf("\n--- Processing file: %s ---\n", file)
+
+			// Get diff for this specific file
+			fileDiff, err := getFileDiff(file)
+			if err != nil {
+				fmt.Printf("Error getting diff for %s: %v\n", file, err)
+				continue
+			}
+
+			if fileDiff == "" {
+				fmt.Printf("No changes detected in %s, skipping.\n", file)
+				continue
+			}
+
+			// Ask for custom context for this file
+			fmt.Printf("Enter additional context for %s (press Enter to skip): ", file)
+			contextLine, err := reader.ReadString('\n')
+			if err != nil {
+				fmt.Printf("Error reading input: %v\n", err)
+				continue
+			}
+			customContext := strings.TrimSpace(contextLine)
+
+			// Generate commit message for this file
+			fmt.Printf("Generating commit message for %s...\n", file)
+			commitMsg, err := generateFileCommitMessage(apiKey, file, fileDiff, customContext)
+			if err != nil {
+				fmt.Printf("Error generating commit message for %s: %v\n", file, err)
+				continue
+			}
+
+			// Display the commit message and ask for confirmation
+			fmt.Printf("\nGenerated commit message for %s:\n\n%s\n\n", file, commitMsg)
+			fmt.Print("Do you want to commit this file with this message? (y/n/exit): ")
+
+			response, err := reader.ReadString('\n')
+			if err != nil {
+				fmt.Printf("Error reading input: %v\n", err)
+				continue
+			}
+			response = strings.TrimSpace(response)
+
+			if strings.ToLower(response) == "exit" {
+				fmt.Println("Exiting autocommit per file.")
+				return
+			}
+
+			if strings.ToLower(response) == "y" || strings.ToLower(response) == "yes" {
+				// Add and commit this specific file
+				addCmd := exec.Command("git", "add", file)
+				addCmd.Stdout = os.Stdout
+				addCmd.Stderr = os.Stderr
+				if err := addCmd.Run(); err != nil {
+					fmt.Printf("Error adding %s: %v\n", file, err)
+					continue
+				}
+
+				// Commit the file
+				if err := executeGitCommand("commit", "-m", commitMsg); err != nil {
+					fmt.Printf("Error committing %s: %v\n", file, err)
+					continue
+				}
+				fmt.Printf("Successfully committed %s\n", file)
+			} else {
+				fmt.Printf("Skipped committing %s\n", file)
+			}
+		}
+
+		fmt.Println("\n--- Batch complete ---")
+		fmt.Print("Continue with remaining files? (y/n): ")
+		continueResponse, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Printf("Error reading input: %v\n", err)
+			break
+		}
+		continueResponse = strings.TrimSpace(continueResponse)
+		if strings.ToLower(continueResponse) != "y" && strings.ToLower(continueResponse) != "yes" {
+			fmt.Println("Exiting autocommit per file.")
+			break
+		}
+	}
+}
+
+func getChangedFiles() ([]string, error) {
+	cmd := exec.Command("git", "status", "--porcelain")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("error getting git status: %v", err)
+	}
+
+	var files []string
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		// Git status --porcelain format: XY filename
+		// We want to extract just the filename
+		if len(line) >= 3 {
+			filename := strings.TrimSpace(line[2:])
+			files = append(files, filename)
+		}
+	}
+
+	return files, nil
+}
+
+func parseFileSelection(input string, files []string) ([]string, error) {
+	if input == "" {
+		return []string{}, nil
+	}
+
+	var selectedFiles []string
+	parts := strings.Split(input, ",")
+
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
+		// Try to parse as number
+		var fileNum int
+		_, err := fmt.Sscanf(part, "%d", &fileNum)
+		if err != nil {
+			return nil, fmt.Errorf("invalid file number: %s", part)
+		}
+
+		if fileNum < 1 || fileNum > len(files) {
+			return nil, fmt.Errorf("file number %d is out of range (1-%d)", fileNum, len(files))
+		}
+
+		selectedFiles = append(selectedFiles, files[fileNum-1])
+	}
+
+	return selectedFiles, nil
+}
+
+func selectFilesWithArrows(files []string) ([]string, error) {
+	if len(files) == 0 {
+		return []string{}, nil
+	}
+
+	// Create options for the selection prompt
+	choices := make([]string, len(files)+2)
+	choices[0] = "✅ All files"
+	choices[1] = "❌ Exit"
+	for i, file := range files {
+		choices[i+2] = fmt.Sprintf("📄 %s", file)
+	}
+
+	// Create the selection prompt using promptui
+	prompt := promptui.Select{
+		Label: "Select files to commit",
+		Items: choices,
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . }}:",
+			Active:   "▶ {{ . | cyan }}",
+			Inactive: "  {{ . }}",
+			Selected: "{{ . | red | cyan }}",
+		},
+		Size: 10,
+	}
+
+	selectedIndex, _, err := prompt.Run()
+	if err != nil {
+		return nil, fmt.Errorf("error running selection prompt: %v", err)
+	}
+
+	// Handle the selection
+	switch selectedIndex {
+	case 0: // All files
+		return files, nil
+	case 1: // Exit
+		return nil, fmt.Errorf("user chose to exit")
+	default: // Specific file
+		fileIndex := selectedIndex - 2
+		if fileIndex >= 0 && fileIndex < len(files) {
+			return []string{files[fileIndex]}, nil
+		}
+		return []string{}, nil
+	}
+}
+
+func selectMultipleFilesWithArrows(files []string) ([]string, error) {
+	if len(files) == 0 {
+		return []string{}, nil
+	}
+
+	var selectedFiles []string
+	remaining := make([]string, len(files))
+	copy(remaining, files)
+
+	fmt.Println("=== Interactive File Selection ===")
+	fmt.Println("Select files one by one. You can repeat this process until you're done.")
+	fmt.Println()
+
+	for len(remaining) > 0 {
+		fmt.Printf("Files selected so far: %d\n", len(selectedFiles))
+		if len(selectedFiles) > 0 {
+			fmt.Println("Selected files:")
+			for _, f := range selectedFiles {
+				fmt.Printf("  ✅ %s\n", f)
+			}
+			fmt.Println()
+		}
+
+		fmt.Printf("Remaining files: %d\n", len(remaining))
+
+		// Create options
+		choices := make([]string, len(remaining)+3)
+		choices[0] = "✅ Proceed with selected files"
+		choices[1] = "📄 Select all remaining files"
+		choices[2] = "❌ Exit"
+		for i, file := range remaining {
+			choices[i+3] = fmt.Sprintf("📄 %s", file)
+		}
+
+		// Create selection prompt using promptui
+		prompt := promptui.Select{
+			Label: "Choose an action",
+			Items: choices,
+			Templates: &promptui.SelectTemplates{
+				Label:    "{{ . }}:",
+				Active:   "▶ {{ . | cyan }}",
+				Inactive: "  {{ . }}",
+				Selected: "{{ . | red | cyan }}",
+			},
+			Size: 15,
+		}
+
+		selectedIndex, _, err := prompt.Run()
+		if err != nil {
+			return nil, fmt.Errorf("error running selection prompt: %v", err)
+		}
+
+		switch selectedIndex {
+		case 0: // Proceed with selected files
+			return selectedFiles, nil
+		case 1: // Select all remaining
+			selectedFiles = append(selectedFiles, remaining...)
+			return selectedFiles, nil
+		case 2: // Exit
+			return nil, fmt.Errorf("user chose to exit")
+		default: // Select specific file
+			fileIndex := selectedIndex - 3
+			if fileIndex >= 0 && fileIndex < len(remaining) {
+				// Add to selected files
+				selectedFiles = append(selectedFiles, remaining[fileIndex])
+				// Remove from remaining
+				remaining = append(remaining[:fileIndex], remaining[fileIndex+1:]...)
+				fmt.Printf("\n✅ Added: %s\n\n", selectedFiles[len(selectedFiles)-1])
+			}
+		}
+	}
+
+	return selectedFiles, nil
+}
+
+func getFileDiff(filename string) (string, error) {
+	// Check if file is staged
+	stagedCmd := exec.Command("git", "diff", "--staged", "--", filename)
+	stagedOutput, err := stagedCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("error getting staged diff for %s: %v", filename, err)
+	}
+
+	// Check if file has unstaged changes
+	unstagedCmd := exec.Command("git", "diff", "--", filename)
+	unstagedOutput, err := unstagedCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("error getting unstaged diff for %s: %v", filename, err)
+	}
+
+	// Check if it's an untracked file
+	statusCmd := exec.Command("git", "status", "--porcelain", "--", filename)
+	statusOutput, err := statusCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("error getting status for %s: %v", filename, err)
+	}
+
+	statusLine := strings.TrimSpace(string(statusOutput))
+
+	// Combine outputs
+	combinedDiff := string(stagedOutput) + string(unstagedOutput)
+
+	// If it's an untracked file, show that it's new
+	if len(statusLine) > 0 && statusLine[0] == '?' {
+		combinedDiff += fmt.Sprintf("\nNew file: %s", filename)
+
+		// Try to show the content of new file (if it's text and not too large)
+		if fileContent, err := os.ReadFile(filename); err == nil && len(fileContent) < 2000 {
+			combinedDiff += fmt.Sprintf("\nFile content:\n%s", string(fileContent))
+		}
+	}
+
+	return combinedDiff, nil
+}
+
+func generateFileCommitMessage(apiKey, filename, diff, customContext string) (string, error) {
+	// Initialize OpenAI client
+	client := openai.NewClient(apiKey)
+
+	// Get current branch name
+	branchName, err := getCurrentBranch()
+	if err != nil {
+		fmt.Printf("Warning: Could not get current branch name: %v\n", err)
+		branchName = "unknown"
+	}
+
+	// Truncate diff if it's too large (OpenAI has token limits)
+	maxDiffLength := 3000
+	diffContent := diff
+	if len(diff) > maxDiffLength {
+		diffContent = diff[:maxDiffLength] + "\n...(diff truncated due to size)"
+	}
+
+	// Get autocommit rules
+	rules, err := getAutocommitRules()
+	if err != nil {
+		fmt.Printf("Warning: Could not load autocommit rules: %v\n", err)
+		rules = AutocommitRules{
+			Rules:  "Please follow the Conventional Commits format: <type>(<scope>): <description>",
+			Source: "root",
+			Path:   "built-in",
+		}
+	}
+
+	// Create prompt for OpenAI focused on the specific file
+	prompt := fmt.Sprintf(
+		"Generate a commit message for changes to this specific file: %s\n\n"+
+			"Git diff for this file:\n%s\n\n"+
+			"Current branch: %s\n\n"+
+			"Additional context provided by the user:\n%s\n\n"+
+			"Must follow these rules for the commit message:\n%s\n\n"+
+			"Focus the commit message on what changed in this specific file. "+
+			"Reply with ONLY the commit message, nothing else.",
+		filename,
+		diffContent,
+		branchName,
+		customContext,
+		rules.Rules,
+	)
+
+	// Create chat completion request
+	resp, err := client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: openai.GPT4Dot1Nano,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: prompt,
+				},
+			},
+			MaxTokens: 200,
+		},
+	)
+
+	if err != nil {
+		return "", fmt.Errorf("chat completion error: %v", err)
+	}
+
+	// Extract the commit message from the response
+	commitMessage := resp.Choices[0].Message.Content
+	return strings.TrimSpace(commitMessage), nil
 }
 
 func hasChangesToCommit() bool {
