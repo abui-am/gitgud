@@ -262,14 +262,14 @@ func setupConfigInteractively() (string, error) {
 func HandleConfig() {
 	// If no arguments, show current configuration
 	if len(os.Args) == 2 {
-		showCurrentConfig()
+		ShowConfigStatus()
 		return
 	}
 
 	if len(os.Args) >= 3 {
 		switch os.Args[2] {
 		case "reset":
-			resetConfig()
+			HandleConfigReset()
 		default:
 			fmt.Println("Unknown config command. Available commands:")
 			fmt.Println("  gg config           - Show current configuration")
@@ -278,7 +278,7 @@ func HandleConfig() {
 	}
 }
 
-func showCurrentConfig() {
+func ShowConfigStatus() {
 	fmt.Println("Current Configuration:")
 
 	// Check all possible locations for API keys
@@ -381,7 +381,7 @@ func maskAPIKey(key string) string {
 	return key[:4] + "..." + key[len(key)-4:]
 }
 
-func resetConfig() {
+func HandleConfigReset() {
 	fmt.Println("Resetting your OpenAI API configuration...")
 	_, err := setupConfigInteractively()
 	if err != nil {

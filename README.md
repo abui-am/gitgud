@@ -16,6 +16,7 @@ Do you want to commit with this message? (y/n/r=retry):
 - Passes all arguments to the underlying Git command
 - Fall-through behavior for any Git command not explicitly listed
 - AI-powered autocommit feature to generate commit messages following Conventional Commits format
+- **Cobra CLI Framework**: Professional command-line interface with automatic help generation
 - **Retry functionality**: Regenerate commit messages until you get one you like
 - **Batch commit mode**: Select multiple files and commit them together with one unified message
 - **Individual file selection**: Choose specific files from directories instead of entire folders
@@ -26,11 +27,11 @@ Do you want to commit with this message? (y/n/r=retry):
 ## Installation
 
 ```bash
-# Build from the new cmd/root.go location
-go build -o gg.exe cmd/root.go
+# Build the application (now using Cobra CLI framework)
+go build -o gg.exe
 ```
 
-**Note**: The main application has been moved from `main.go` to `cmd/root.go` following Go project layout standards.
+**Note**: The application now uses the Cobra CLI framework for better command structure and help system.
 
 ### Adding to System PATH
 
@@ -169,25 +170,48 @@ Common types include:
 
 ## Usage
 
-```
-./gg init                        # Initialize a new repository
-./gg add <file>                  # Add file to staging area
-./gg commit -m "commit message"  # Commit staged changes
-./gg log                         # View commit history
-./gg status                      # Check status of working directory
-./gg diff                        # View differences
-./gg autocommit                  # Auto-add all changes and generate AI commit message
-./gg ac                          # Alias for autocommit
-./gg autocommit-per-file         # Interactive per-file commits with AI messages
-./gg acpf                        # Alias for autocommit-per-file
-./gg last                        # Show detailed information about the last commit
-./gg branch                      # List, create, or delete branches
-./gg checkout <branch>           # Switch branches
-./gg push                        # Push to remote repository
-./gg pull                        # Pull from remote repository
+### Getting Help
+
+```bash
+gg --help                        # Show all available commands
+gg <command> --help             # Show help for specific command
+gg autocommit --help            # Show help for autocommit
+gg config --help                # Show help for config management
 ```
 
-GitGud passes all arguments directly to Git, so any valid Git command and options will work.
+### Basic Commands
+
+```bash
+gg init                         # Initialize a new repository
+gg add <file>                   # Add file to staging area
+gg commit -m "commit message"   # Commit staged changes
+gg log                          # View commit history
+gg status                       # Check status of working directory
+gg diff                         # View differences
+gg branch                       # List, create, or delete branches
+gg checkout <branch>            # Switch branches
+gg push                         # Push to remote repository
+gg pull                         # Pull from remote repository
+```
+
+### AI-Powered Commands
+
+```bash
+gg autocommit                   # Auto-add all changes and generate AI commit message
+gg ac                           # Alias for autocommit
+gg autocommit-per-file          # Interactive per-file commits with AI messages
+gg acpf                         # Alias for autocommit-per-file
+```
+
+### Configuration
+
+```bash
+gg config                       # Show current configuration
+gg config reset                 # Reset and update API key
+gg last                         # Show detailed information about the last commit
+```
+
+GitGud passes all arguments directly to Git, so any valid Git command and options will work. The Cobra framework provides comprehensive help for all commands.
 
 ### Viewing Last Commit Information
 
