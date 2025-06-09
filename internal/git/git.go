@@ -135,6 +135,15 @@ func GetChangedFiles() ([]string, error) {
 		if len(line) >= 3 {
 			filename := strings.TrimSpace(line[2:])
 
+			// Handle renamed files: "R  oldfile -> newfile"
+			if line[0] == 'R' && strings.Contains(filename, " -> ") {
+				// For renamed files, we want the new filename
+				parts := strings.Split(filename, " -> ")
+				if len(parts) == 2 {
+					filename = strings.TrimSpace(parts[1])
+				}
+			}
+
 			// Check if this is an untracked directory (ends with /)
 			if strings.HasSuffix(filename, "/") {
 				// Expand directory to individual files
