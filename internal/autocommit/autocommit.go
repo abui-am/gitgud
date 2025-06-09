@@ -144,34 +144,52 @@ func HandleAutoCommit() {
 		os.Exit(1)
 	}
 
-	// Display the commit message and ask for confirmation
-	fmt.Printf("\nGenerated commit message:\n\n%s\n\n", commitMsg)
-	fmt.Print("Do you want to commit with this message? (y/n): ")
+	// Loop to allow retrying commit message generation
+	for {
+		// Display the commit message and ask for confirmation
+		fmt.Printf("\nGenerated commit message:\n\n%s\n\n", commitMsg)
+		fmt.Print("Do you want to commit with this message? (y/n/r=retry): ")
 
-	response, err := reader.ReadString('\n')
-	if err != nil {
-		fmt.Printf("Error reading input: %v\n", err)
-		os.Exit(1)
-	}
-
-	response = strings.TrimSpace(response)
-	if strings.ToLower(response) == "y" || strings.ToLower(response) == "yes" {
-		// Add all changes
-		addCmd := exec.Command("git", "add", ".")
-		addCmd.Stdout = os.Stdout
-		addCmd.Stderr = os.Stderr
-		if err := addCmd.Run(); err != nil {
-			fmt.Printf("Error adding changes: %v\n", err)
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Printf("Error reading input: %v\n", err)
 			os.Exit(1)
 		}
 
-		// Commit changes
-		if err := git.ExecuteGitCommand("commit", "-m", commitMsg); err != nil {
-			fmt.Printf("Error committing changes: %v\n", err)
-			os.Exit(1)
+		response = strings.ToLower(strings.TrimSpace(response))
+
+		if response == "y" || response == "yes" {
+			// Add all changes
+			addCmd := exec.Command("git", "add", ".")
+			addCmd.Stdout = os.Stdout
+			addCmd.Stderr = os.Stderr
+			if err := addCmd.Run(); err != nil {
+				fmt.Printf("Error adding changes: %v\n", err)
+				os.Exit(1)
+			}
+
+			// Commit changes
+			if err := git.ExecuteGitCommand("commit", "-m", commitMsg); err != nil {
+				fmt.Printf("Error committing changes: %v\n", err)
+				os.Exit(1)
+			}
+			break
+		} else if response == "r" || response == "retry" {
+			// Regenerate commit message
+			fmt.Println("\nRegenerating commit message...")
+			newCommitMsg, err := generateCommitMessage(apiKey, diff, customContext)
+			if err != nil {
+				fmt.Printf("Error regenerating commit message: %v\n", err)
+				fmt.Println("This could be due to an invalid or expired API key.")
+				fmt.Println("Please run 'gg config reset' to update your API key")
+				os.Exit(1)
+			}
+			commitMsg = newCommitMsg
+			continue
+		} else {
+			fmt.Println("Commit canceled.")
+			break
 		}
-	} else {
-		fmt.Println("Commit canceled.")
 	}
 }
 
@@ -291,42 +309,57 @@ func HandleAutoCommitPerFile() {
 			continue
 		}
 
-		// Display the commit message and ask for confirmation
-		fmt.Printf("\nGenerated commit message for batch:\n\n%s\n\n", commitMsg)
-		fmt.Print("Do you want to commit these files with this message? (y/n/exit): ")
+		// Loop to allow retrying batch commit message generation
+		for {
+			// Display the commit message and ask for confirmation
+			fmt.Printf("\nGenerated commit message for batch:\n\n%s\n\n", commitMsg)
+			fmt.Print("Do you want to commit these files with this message? (y/n/r=retry/exit): ")
 
-		response, err := reader.ReadString('\n')
-		if err != nil {
-			fmt.Printf("Error reading input: %v\n", err)
-			continue
-		}
-		response = strings.TrimSpace(response)
-
-		if strings.ToLower(response) == "exit" {
-			fmt.Println("Exiting autocommit per file.")
-			return
-		}
-
-		if strings.ToLower(response) == "y" || strings.ToLower(response) == "yes" {
-			// Add all selected files
-			for _, file := range validFiles {
-				addCmd := exec.Command("git", "add", file)
-				addCmd.Stdout = os.Stdout
-				addCmd.Stderr = os.Stderr
-				if err := addCmd.Run(); err != nil {
-					fmt.Printf("Error adding %s: %v\n", file, err)
-					continue
-				}
-			}
-
-			// Commit all files with one message
-			if err := git.ExecuteGitCommand("commit", "-m", commitMsg); err != nil {
-				fmt.Printf("Error committing batch: %v\n", err)
+			response, err := reader.ReadString('\n')
+			if err != nil {
+				fmt.Printf("Error reading input: %v\n", err)
 				continue
 			}
-			fmt.Printf("Successfully committed %d file(s) in one commit\n", len(validFiles))
-		} else {
-			fmt.Printf("Skipped committing batch of %d file(s)\n", len(validFiles))
+			response = strings.ToLower(strings.TrimSpace(response))
+
+			if response == "exit" {
+				fmt.Println("Exiting autocommit per file.")
+				return
+			}
+
+			if response == "y" || response == "yes" {
+				// Add all selected files
+				for _, file := range validFiles {
+					addCmd := exec.Command("git", "add", file)
+					addCmd.Stdout = os.Stdout
+					addCmd.Stderr = os.Stderr
+					if err := addCmd.Run(); err != nil {
+						fmt.Printf("Error adding %s: %v\n", file, err)
+						continue
+					}
+				}
+
+				// Commit all files with one message
+				if err := git.ExecuteGitCommand("commit", "-m", commitMsg); err != nil {
+					fmt.Printf("Error committing batch: %v\n", err)
+					continue
+				}
+				fmt.Printf("Successfully committed %d file(s) in one commit\n", len(validFiles))
+				break
+			} else if response == "r" || response == "retry" {
+				// Regenerate commit message for the batch
+				fmt.Printf("Regenerating commit message for %d file(s)...\n", len(validFiles))
+				newCommitMsg, err := generateBatchCommitMessage(apiKey, validFiles, combinedDiff.String(), customContext)
+				if err != nil {
+					fmt.Printf("Error regenerating commit message for batch: %v\n", err)
+					continue
+				}
+				commitMsg = newCommitMsg
+				continue
+			} else {
+				fmt.Printf("Skipped committing batch of %d file(s)\n", len(validFiles))
+				break
+			}
 		}
 
 		fmt.Println("\n--- Processing complete ---")
