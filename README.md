@@ -4,7 +4,7 @@
 Generating commit message with AI...
 Generated commit message:
 feat(auto): allow customizable autocommit rules via .autocommit.md
-Do you want to commit with this message? (y/n):
+Do you want to commit with this message? (y/n/r=retry):
 ```
 
 ## Features
@@ -16,17 +16,21 @@ Do you want to commit with this message? (y/n):
 - Passes all arguments to the underlying Git command
 - Fall-through behavior for any Git command not explicitly listed
 - AI-powered autocommit feature to generate commit messages following Conventional Commits format
+- **Retry functionality**: Regenerate commit messages until you get one you like
+- **Batch commit mode**: Select multiple files and commit them together with one unified message
+- **Individual file selection**: Choose specific files from directories instead of entire folders
 - Customizable commit message rules via .autocommit.md file
 - Flexible configuration options for OpenAI API key
 - API key validation and troubleshooting
 
 ## Installation
 
+```bash
+# Build from the new cmd/root.go location
+go build -o gg.exe cmd/root.go
 ```
-# The default build command would create gitgud.exe (based on the directory name)
-# To create gg.exe instead, use:
-go build -o gg.exe
-```
+
+**Note**: The main application has been moved from `main.go` to `cmd/root.go` following Go project layout standards.
 
 ### Adding to System PATH
 
@@ -209,8 +213,9 @@ The `autocommit` command (or its shorter alias `ac`):
 2. Includes the current branch name for context-aware commit messages
 3. Provides context from the last commit (hash, author, date, and message)
 4. Sends the diff to OpenAI to generate a meaningful commit message following the Conventional Commits format
-5. Shows you the suggested commit message and asks for confirmation
-6. If you confirm, stages all changes and commits them with the AI-generated message
+5. Shows you the suggested commit message with retry options
+6. **NEW**: Press `r` or `retry` to regenerate the message until you're satisfied
+7. If you confirm, stages all changes and commits them with the AI-generated message
 
 **Important**: You can customize the commit message format by creating or editing the `.autocommit.md` file. Since this file is in `.gitignore`, you'll need to create it in each repository where you use this tool.
 
@@ -251,11 +256,59 @@ Common types include:
 - `style`: Changes that don't affect code functionality (formatting, etc.)
 - `refactor`: Code changes that neither fix bugs nor add features
 
+## Retry Functionality
+
+### What's New
+
+Both `autocommit` and `autocommit-per-file` now support **retry functionality**. If you don't like the AI-generated commit message, you can regenerate it without starting over.
+
+### How to Use
+
+When prompted with a commit message, you now have these options:
+
+- `y` or `yes` - Commit with the current message
+- `n` or `no` - Cancel/skip the commit
+- `r` or `retry` - **Generate a new message** 🔄
+- `exit` - Exit the program (acpf only)
+
+### Example
+
+```bash
+gg autocommit
+
+Generated commit message:
+
+fix: update configuration settings
+
+Do you want to commit with this message? (y/n/r=retry): r
+
+Regenerating commit message...
+
+Generated commit message:
+
+feat(config): implement dynamic configuration management
+
+Do you want to commit with this message? (y/n/r=retry): y
+Changes committed successfully!
+```
+
+### Why Use Retry?
+
+- **AI Variability**: Each generation can produce different results
+- **Better Quality**: Keep trying until you get a message you like
+- **No Wasted Work**: Same changes, just different AI interpretation
+- **Learn Patterns**: See how AI interprets your changes differently
+
 ## Autocommit Per File Feature
 
 ### Overview
 
-The `autocommit-per-file` (or `acpf`) feature allows you to commit files individually with AI-generated commit messages. This is particularly useful when you have multiple changes that should be committed separately with different commit messages.
+The `autocommit-per-file` (or `acpf`) feature allows you to commit files individually or in batches with AI-generated commit messages. This feature has been significantly enhanced with:
+
+- **Individual file selection**: Choose specific files instead of entire directories
+- **Batch commit mode**: Select multiple files and commit them together with one unified message
+- **Retry functionality**: Regenerate commit messages until you're satisfied
+- **Improved file listing**: See individual files instead of directory names
 
 ### Usage
 
@@ -267,7 +320,7 @@ gg acpf
 
 ### How it Works
 
-1. **List Changed Files**: The tool displays all files with changes (modified, added, or untracked)
+1. **List Changed Files**: The tool displays all individual files with changes (no more directory grouping!)
 2. **Interactive File Selection**: You can select which files to commit using arrow key navigation:
    - Use ↑/↓ arrow keys to navigate
    - Press Enter to select an option
@@ -275,21 +328,26 @@ gg acpf
    - Select all remaining files at once
    - Proceed with currently selected files
    - Exit at any time
-3. **File Processing**: For each selected file:
-   - Shows the diff for that specific file
-   - Asks for additional context (optional)
-   - Generates an AI-powered commit message
-   - Asks for confirmation before committing
-4. **Loop Process**: After processing all selected files, you can continue with remaining files or exit
+3. **Batch Processing**: Selected files are processed together:
+   - **NEW**: All selected files are committed together as one batch
+   - Shows combined diff for all selected files
+   - Asks for context for the entire batch (not per file)
+   - Generates one unified AI-powered commit message
+   - **NEW**: Option to retry message generation with `r` or `retry`
+   - Commits all selected files with one message
+4. **Loop Process**: After processing the batch, you can continue with remaining files or exit
 
 ### Features
 
 - ✅ Interactive file selection with arrow key navigation
-- ✅ AI-generated commit messages per file
-- ✅ Custom context for each file
+- ✅ **NEW**: Individual file listing (no more directory grouping)
+- ✅ **NEW**: Batch commit mode - commit multiple files with one message
+- ✅ **NEW**: Retry functionality - regenerate messages until satisfied
+- ✅ AI-generated commit messages for file batches
+- ✅ Custom context for each batch
 - ✅ Loop through the process multiple times
 - ✅ Exit at any time using the menu
-- ✅ Handles new, modified, and staged files
+- ✅ Handles new, modified, staged, and renamed files
 - ✅ Uses your existing autocommit rules from `.autocommit.md`
 - ✅ Beautiful terminal UI with colors and icons
 
@@ -316,27 +374,27 @@ Choose an action:
 
 [User navigates with arrows and selects main.go, then test_feature.txt]
 
---- Processing file: main.go ---
-Enter additional context for main.go (press Enter to skip): Added new autocommit per file feature
-Generating commit message for main.go...
+--- Processing 2 selected file(s) ---
+  - main.go
+  - test_feature.txt
 
-Generated commit message for main.go:
+Enter additional context for these 2 file(s) (press Enter to skip): Added new autocommit per file feature with batch processing
+Generating commit message for 2 file(s)...
 
-feat: add autocommit per file functionality for selective commits
+Generated commit message for batch:
 
-Do you want to commit this file with this message? (y/n/exit): y
-Successfully committed main.go
+feat: add autocommit per file functionality with batch processing
 
---- Processing file: test_feature.txt ---
-Enter additional context for test_feature.txt (press Enter to skip):
-Generating commit message for test_feature.txt...
+Do you want to commit these files with this message? (y/n/r=retry/exit): r
 
-Generated commit message for test_feature.txt:
+Regenerating commit message for 2 file(s)...
 
-docs: add test file demonstrating autocommit per file feature
+Generated commit message for batch:
 
-Do you want to commit this file with this message? (y/n/exit): y
-Successfully committed test_feature.txt
+feat(autocommit): implement batch processing for selective file commits
+
+Do you want to commit these files with this message? (y/n/r=retry/exit): y
+Successfully committed 2 file(s) in one commit
 
 --- Processing complete ---
 Continue with remaining files? (y/n): y
@@ -350,13 +408,15 @@ Continue with remaining files? (y/n): y
 
 ### Tips
 
-- Use specific context to get better commit messages
-- You can skip files by answering 'n' when asked to commit
+- **NEW**: Use the retry feature (`r`) to get better commit messages
+- Use specific context to get better commit messages for the batch
+- You can skip batches by answering 'n' when asked to commit
 - The feature respects your `.autocommit.md` rules
-- Each commit is made separately, so you get granular commit history
+- **NEW**: Selected files are committed together in one commit (not separately)
 - Use arrow keys for easy navigation - no need to type numbers
 - You can select files incrementally and see your progress
 - The interface shows clear visual feedback with colors and icons
+- **NEW**: Individual files are shown instead of directory names (e.g., `internal/config/config.go` instead of `internal/`)
 
 ## Custom Context
 
